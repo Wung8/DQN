@@ -1,5 +1,4 @@
-from environments.cartpole import CartPoleEnvironment as game
-#import environments.pendulum as game
+from cartpole import CartPoleEnvironment as game
 from DQN_agent import DQN_agent, DQN_trainer
 
 agent = DQN_agent(input_space=4, action_space=3)
