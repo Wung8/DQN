@@ -60,12 +60,21 @@ class DQN_agent:
         if next_state == -1:
             max_next_q = 0  # if end of episode next_q = 0
         else:
+            # no grad to save computation
             with torch.no_grad():
                 _, next_qvals = self.get_action(next_state, next_valid_actions)
                 max_next_q = max(next_qvals)
+        # your backward pass confused me a bit but this is a common way to do it
+        # switched the order of q and next q which is the main change
         output = self.model(self.conv(state))
         td_e = 1 / 2 * (output[0, action] - r + discount * max_next_q) ** 2
-        td_e.backward(retain_graph=True)
+        td_e.backward(retain_graph=True)  # normally you only call backward once
+        # on the whole batch instead of doing this for each transition because
+        # that way your cpu only has  to talk to the gpu once which speeds things
+        # up imensely but since we are not doing that we need the computation graph
+        # to not get deleted when we do the backward call so that it can accumulate
+        # gradients from each example in the batch. Not sure if it would have been
+        # overwritten here for each example but better safe than sorry
         return td_e.detach().item()
 
     def set_conv(self, conv):
@@ -108,7 +117,7 @@ class DQN_trainer:
         self,
         env,
         agent,
-        discount=0.99,
+        discount=0.99,  # changed discount and batch size to common ones
         lr=0.001,
         batch_size=128,
         buffer_size=200000,
